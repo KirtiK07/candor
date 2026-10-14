@@ -125,8 +125,10 @@ def _card(store, summary: dict) -> None:
             r = v["resume_json"]
             d1, d2 = st.columns(2)
             d1.download_button("⬇️ PDF", lambda r=r: to_pdf(r, photo, a4, limit)[0], f"{base}.pdf",
-                               "application/pdf", key=f"h_pdf_{aid}_{n}", width="stretch")
+                               "application/pdf", key=f"h_pdf_{aid}_{n}", width="stretch",
+                               help="Tailored resume as a PDF fitted to your page limit.")
             d2.download_button("⬇️ DOCX", lambda r=r: to_docx(r, photo, a4), f"{base}.docx", DOCX_MIME,
+                               help="Tailored resume as an editable Word file (best for ATS).",
                                key=f"h_docx_{aid}_{n}", width="stretch")
             if v.get("cover_letter"):
                 st.download_button("⬇️ Cover letter (PDF)", lambda t=v["cover_letter"]: cover_letter_to_pdf(t, a4),
@@ -161,7 +163,8 @@ def render(store) -> None:
     q = search.text_input("🔎 Search by company or role", key="hist_q", label_visibility="collapsed",
                           placeholder="🔎 Search by company or role").strip().lower()
     zip_col.download_button("📦 Download all (ZIP)", lambda: _build_zip(store, apps), "candor_history.zip",
-                            "application/zip", width="stretch", key="hist_zip")
+                            "application/zip", width="stretch", key="hist_zip",
+                            help="One folder per application: original resume, JD, tailored PDF/DOCX, cover letter.")
     with clear_col.popover("🧹 Clear all history", width="stretch"):
         st.warning(f"This permanently deletes all {len(apps)} application(s): resumes, job descriptions, every "
                    "version and cover letter. Token usage stays in the Usage tab.")

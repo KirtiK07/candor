@@ -71,7 +71,9 @@ def render(store) -> None:
             if ss.get("provider") not in providers:
                 ss.provider = _choose_provider(providers)
             provider_labels = {p: PROVIDERS[p]["label"] + ("" if _status(p)["default"] else " ⚠️") for p in providers}
-            st.radio("Provider", providers, key="provider", horizontal=True, format_func=provider_labels.get)
+            st.radio("Provider", providers, key="provider", horizontal=True, format_func=provider_labels.get,
+                     help="Which AI service writes your resume. If it runs out of quota mid-run, Candor switches "
+                          "to the next one automatically. ⚠️ means its key failed the check.")
             status = _status(ss.provider)
             ss.models = status["models"]
             if status["key_error"] and not status["default"]:
@@ -109,8 +111,8 @@ def render(store) -> None:
         st.subheader("📊 Usage")
         sess = ss.get("session_usage", [])
         c1, c2 = st.columns(2)
-        c1.metric("Session tokens", f"{sum(e['prompt_tokens'] + e['completion_tokens'] for e in sess):,}")
-        c2.metric("Session cost", f"${sum(e['cost_usd'] for e in sess):.4f}")
+        c1.metric("Tokens (session)", f"{sum(e['prompt_tokens'] + e['completion_tokens'] for e in sess):,}")
+        c2.metric("Cost (session)", f"${sum(e['cost_usd'] for e in sess):.4f}")
         try:
             rows = store.usage_rows()
             st.caption(f"All-time: {sum(r['prompt_tokens'] + r['completion_tokens'] for r in rows):,} tokens · "

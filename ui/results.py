@@ -69,9 +69,12 @@ def render_results(store, app_id: int, key: str) -> None:
     serious = [i for i in issues if i["severity"] in ("high", "medium")]
 
     m = st.columns(3)
-    m[0].metric("ATS keyword match", f"{v['ats_after']}%", f"{v['ats_after'] - v['ats_before']:+d} pts vs original")
-    m[1].metric("Fact check", "✅ Clean" if not serious else f"⚠️ {len(serious)} to review")
-    m[2].metric("Original ATS match", f"{v['ats_before']}%")
+    m[0].metric("ATS keyword match", f"{v['ats_after']}%", f"{v['ats_after'] - v['ats_before']:+d} pts vs original",
+                help="Share of the job's requirements your resume shows. Alternatives ('React or JavaScript') "
+                     "count once; required items count double. Only true skills can raise it.")
+    m[1].metric("Fact check", "✅ Clean" if not serious else f"⚠️ {len(serious)} to review",
+                help="Every change was compared with your original resume. Details in the Fact check tab.")
+    m[2].metric("Original ATS match", f"{v['ats_before']}%", help="The same score for your resume before tailoring.")
     st.caption(f"Created {v['created_at']} · Intensity: {v['intensity']}"
                + (f" · Feedback: “{v['feedback'][:120]}”" if v.get("feedback") else ""))
     _render_token_usage(store, v)
@@ -101,14 +104,18 @@ def render_results(store, app_id: int, key: str) -> None:
     d = st.columns(5)
     if docx_b:
         d[0].download_button("⬇️ DOCX (best for ATS)", docx_b, f"{base}.docx", key=f"{key}_docx_{vid}",
+                             help="Word file: the safest format for applicant tracking systems.",
                              mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                              width="stretch")
         d[1].download_button("⬇️ PDF", pdf_b, f"{base}.pdf", "application/pdf", key=f"{key}_pdf_{vid}",
+                             help="Polished PDF fitted to your page limit: best for emailing a person.",
                              width="stretch")
-    d[2].download_button("⬇️ Plain text", text, f"{base}.txt", key=f"{key}_txt_{vid}", width="stretch")
+    d[2].download_button("⬇️ Plain text", text, f"{base}.txt", key=f"{key}_txt_{vid}", width="stretch",
+                         help="For pasting into online application forms.")
     d[3].download_button("⬇️ Change report", report, f"{base}_changes.txt", key=f"{key}_rep_{vid}", width="stretch",
                          help="What was changed and why. For you, not for the employer.")
-    if not v["is_final"] and d[4].button("⭐ Mark as final", key=f"{key}_final_{vid}", width="stretch"):
+    if not v["is_final"] and d[4].button("⭐ Mark as final", key=f"{key}_final_{vid}", width="stretch",
+                                         help="The version History and the ZIP export show for this application."):
         store.set_final(app_id, vid)
         st.rerun()
 
@@ -163,7 +170,8 @@ def _render_changes(changes: list[dict], stats: dict | None, notes: list[str]) -
     st.markdown("### 📝 What was changed and why")
     if stats:
         c = st.columns(3)
-        c[0].metric("Bullets rewritten", f"{stats['rewritten']} of {stats['items']}")
+        c[0].metric("Bullets rewritten", f"{stats['rewritten']} of {stats['items']}",
+                    help="Bullets reworded for this job. The rest were already a good fit and kept.")
         c[1].metric("Bullets removed", stats["removed"])
         c[2].metric("Kept as written", stats["kept_unchanged"])
     if not changes:
@@ -174,8 +182,8 @@ def _render_changes(changes: list[dict], stats: dict | None, notes: list[str]) -
         with st.container(border=True):
             st.markdown(f"**✏️ {_md(c.get('section'))}**")
             if c.get("before"):
-                st.markdown(f"<span style='color:#94a3b8'>Before:</span> {_md(c['before'])}", unsafe_allow_html=True)
-            st.markdown(f"<span style='color:#16a34a'>After:</span> {_md(c.get('after'))}", unsafe_allow_html=True)
+                st.markdown(f"<span style='color:#94A3B8'>Before:</span> {_md(c['before'])}", unsafe_allow_html=True)
+            st.markdown(f"<span style='color:#34D399;font-weight:600'>After:</span> {_md(c.get('after'))}", unsafe_allow_html=True)
             why = _md(c.get("reason")) or "Tailored to the JD."
             st.caption(f"Why: {why}" + (f"  ·  JD keywords: {c['jd_requirement']}" if c.get("jd_requirement") else ""))
     moves = by_type("reorder")
@@ -274,9 +282,11 @@ def _render_retry(store, app: dict, v: dict, serious: list[dict], key: str) -> N
         cover = c[2].checkbox("Generate cover letter", value=bool((app.get("inputs") or {}).get("cover_letter")),
                               key=f"{key}_rc_{aid}")
         b = st.columns(2)
-        if b[0].button("🔁 Retry", type="primary", key=f"{key}_retry_{aid}", width="stretch"):
+        if b[0].button("🔁 Retry", type="primary", key=f"{key}_retry_{aid}", width="stretch",
+                       help="Makes a new version using your feedback. Earlier versions are kept."):
             _retry(store, app, v, fb, model, intensity, cover, key)
         if serious and b[1].button("🛠 Fix the flagged fact-check issues", key=f"{key}_fix_{aid}",
+                                   help="New version that reverts or removes only the flagged claims.",
                                    width="stretch"):
             ver = v.get("verification") or {}
             lines = [i.get("detail", "") for i in ver.get("rule_issues") or [] if i.get("severity") in ("high", "medium")]

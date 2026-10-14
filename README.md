@@ -19,7 +19,9 @@ a diff of every change, and a fact-check report.
   plain text; side-by-side diff; change log with reasons; skill gaps.
 - **Retry** with feedback (and a different model or intensity). Every version is kept, and you can mark one ⭐ final.
   A one-click "Fix flagged issues" retry is also available.
-- **History tab:** every JD (company + title) with all versions, searchable, downloadable, ZIP export.
+- **History tab:** one card per application showing your original resume, the JD and the tailored resume side by
+  side, each downloadable (PDF/DOCX/TXT, cover letter), plus full details on demand. Searchable, ZIP export,
+  **Clear all history** button, and automatic deletion after 30 days (`HISTORY_RETENTION_DAYS`, 0 = keep forever).
 - **Model dropdown** populated from your API key, showing price per model; token estimate before each run;
   exact usage per call logged in the **Usage tab** (by model / day / company / pipeline step).
 

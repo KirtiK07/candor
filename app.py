@@ -17,6 +17,7 @@ if not login.require_login():
     st.stop()
 
 store = get_store()
+history.purge_old(store, history.retention_days())
 style.banner()
 sidebar.render(store)
 login.logout_button()

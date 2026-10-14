@@ -116,6 +116,16 @@ class SQLiteStore:
         with self._conn() as c:
             c.execute("DELETE FROM applications WHERE id = ?", (app_id,))
 
+    def delete_older_than(self, cutoff: str) -> int:
+        """Delete applications (and their versions) created before `cutoff` (ISO timestamp). Returns the count."""
+        with self._conn() as c:
+            return c.execute("DELETE FROM applications WHERE created_at < ?", (cutoff,)).rowcount
+
+    def clear_history(self) -> int:
+        """Delete every application and version. Token usage is kept. Returns the count."""
+        with self._conn() as c:
+            return c.execute("DELETE FROM applications").rowcount
+
     def log_usage(self, entries: list[dict], app_id=None, version_id=None, company=None) -> None:
         if not entries:
             return

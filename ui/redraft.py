@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit.components.v1 as components
 
 from core.llm_client import LLMError, is_reasoning
 from core.parser import ParseError, extract_text
@@ -159,6 +158,7 @@ def render(store) -> None:
         st.markdown('<div id="results"></div>', unsafe_allow_html=True)
         if ss.pop("just_generated", False):
             st.toast("Your tailored resume is ready!", icon="✅")
-            components.html("<script>window.parent.document.getElementById('results')"
-                            "?.scrollIntoView({behavior: 'smooth'});</script>", height=0)
+            # fixed, app-authored script (never user content), so a same-origin iframe is safe here
+            st.iframe("<script>window.parent.document.getElementById('results')"
+                      "?.scrollIntoView({behavior: 'smooth'});</script>", height=1)
         render_results(store, ss.current_app_id, key="cur")

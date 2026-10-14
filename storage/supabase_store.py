@@ -66,6 +66,15 @@ class SupabaseStore:
     def delete_application(self, app_id: int) -> None:
         self.db.table("applications").delete().eq("id", app_id).execute()
 
+    def delete_older_than(self, cutoff: str) -> int:
+        """Delete applications (versions cascade) created before `cutoff` (ISO timestamp). Returns the count."""
+        return len(self.db.table("applications").delete().lt("created_at", cutoff).execute().data or [])
+
+    def clear_history(self) -> int:
+        """Delete every application and version. Token usage is kept. Returns the count."""
+        # Supabase refuses an unfiltered delete, so match every row explicitly.
+        return len(self.db.table("applications").delete().gte("id", 0).execute().data or [])
+
     def log_usage(self, entries: list[dict], app_id=None, version_id=None, company=None) -> None:
         if entries:
             self.db.table("usage_log").insert([

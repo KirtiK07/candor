@@ -168,3 +168,20 @@ def test_cover_letter_failure_keeps_the_resume_and_explains():
     assert v["cover_letter"] is None and v["resume_json"]["name"] == "Priya Sharma"
     issue = next(i for i in v["verification"]["rule_issues"] if i.get("id") == "COVER_LETTER")
     assert "daily quota" in issue["detail"]
+
+
+def test_history_retention_and_clear(tmp_path):
+    from storage.sqlite_store import SQLiteStore
+
+    store = SQLiteStore(tmp_path / "h.db")
+    ids = [store.create_application(company=c, job_title="Dev", jd_text="jd", inputs={}, original_resume_text="r",
+                                    resume_json=RESUME_JSON, jd_analysis={}) for c in ("Old", "New")]
+    store.add_version(ids[0], {"resume_json": RESUME_JSON, "ats_before": 1, "ats_after": 2})
+    store.log_usage([{"step": "rewrite", "model": "m", "prompt_tokens": 1, "completion_tokens": 1, "cost_usd": 0}],
+                    ids[0], None, "Old")
+    with store._conn() as c:  # make the first one 40 days old
+        c.execute("UPDATE applications SET created_at = '2000-01-01T00:00:00' WHERE id = ?", (ids[0],))
+    assert store.delete_older_than("2020-01-01T00:00:00") == 1
+    assert [a["company"] for a in store.list_applications()] == ["New"] and store.get_versions(ids[0]) == []
+    assert store.clear_history() == 1 and store.list_applications() == []
+    assert len(store.usage_rows()) == 1  # spend history is kept

@@ -204,3 +204,21 @@ def test_login_page_blocks_until_correct_id_and_password(make_app, monkeypatch):
     sign_out = next(b for b in at.sidebar.button if "Sign out" in b.label)
     sign_out.click().run()
     assert not at.tabs
+
+
+def test_history_cards_show_original_jd_and_tailored_with_downloads(make_app):
+    at = make_app("sk-test")
+    at.text_area(key="in_resume_text").input(RESUME_TEXT)
+    at.text_area(key="in_jd").input(JD_TEXT).run()
+    _button(at, "Generate Tailored Resume").click().run()
+    assert not at.exception, at.exception
+    md = " ".join(m.value for m in at.markdown)
+    assert "📄 Original resume" in md and "📋 Job description" in md and "✨ Tailored resume" in md
+    assert "History older than 30 days is deleted automatically" in " ".join(c.value for c in at.caption)
+    labels = [b.label for b in at.get("download_button")]
+    assert {"⬇️ Original (.txt)", "⬇️ Job description (.txt)", "⬇️ PDF", "⬇️ DOCX"} <= set(labels)
+
+    at.text_input(key="hist_clear_confirm").input("DELETE").run()
+    next(b for b in at.button if b.key == "hist_clear").click().run()
+    assert not at.exception, at.exception
+    assert any("No tailored resumes yet" in i.value for i in at.info)

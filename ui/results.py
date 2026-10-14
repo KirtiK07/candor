@@ -10,7 +10,7 @@ from core.pipeline import Settings, generate_version, usage_totals
 from core.renderer import (cover_letter_to_docx, cover_letter_to_pdf, resume_to_markdown, resume_to_text,
                            to_docx, to_pdf)
 from core.tailor import change_report
-from ui.common import INTENSITIES, INTENSITY_HELP, model_label, record_usage, safe_filename
+from ui.common import INTENSITIES, INTENSITY_HELP, fmt_time, model_label, record_usage, safe_filename
 from ui.sidebar import make_llm
 
 SEV_ICON = {"high": "🔴", "medium": "🟠", "low": "🟡"}
@@ -75,7 +75,7 @@ def render_results(store, app_id: int, key: str) -> None:
     m[1].metric("Fact check", "✅ Clean" if not serious else f"⚠️ {len(serious)} to review",
                 help="Every change was compared with your original resume. Details in the Fact check tab.")
     m[2].metric("Original ATS match", f"{v['ats_before']}%", help="The same score for your resume before tailoring.")
-    st.caption(f"Created {v['created_at']} · Intensity: {v['intensity']}"
+    st.caption(f"Created {fmt_time(v['created_at'])} · Intensity: {v['intensity']}"
                + (f" · Feedback: “{v['feedback'][:120]}”" if v.get("feedback") else ""))
     _render_token_usage(store, v)
 

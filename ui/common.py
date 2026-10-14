@@ -1,4 +1,5 @@
 import re
+from datetime import datetime, timedelta, timezone
 
 import streamlit as st
 
@@ -29,6 +30,24 @@ def record_usage(store, entries: list[dict], app_id=None, version_id=None, compa
         store.log_usage(entries, app_id, version_id, company)
     except Exception as e:  # never lose the user's result because of a logging failure
         st.warning(f"Couldn't save usage log: {e}")
+
+
+IST = timezone(timedelta(hours=5, minutes=30), "IST")  # India has no daylight saving
+
+
+def to_ist(ts) -> datetime | None:
+    """A saved timestamp in Indian time. Older entries have no offset and were written in the saving machine's
+    local time (UTC on Streamlit Cloud, IST locally); astimezone() reads a naive time as this machine's local
+    time, which matches where that data was saved."""
+    try:
+        return datetime.fromisoformat(str(ts)).astimezone(IST)
+    except (TypeError, ValueError):
+        return None
+
+
+def fmt_time(ts) -> str:
+    dt = to_ist(ts)
+    return dt.strftime("%d %b %Y, %I:%M %p IST") if dt else str(ts or "")[:16]
 
 
 def safe_filename(*parts: str) -> str:

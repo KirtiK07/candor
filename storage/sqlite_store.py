@@ -1,7 +1,7 @@
 import json
 import sqlite3
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 SCHEMA = """
@@ -32,7 +32,8 @@ VERSION_COLS = ["model", "intensity", "feedback", "resume_json", "cover_letter",
 
 
 def now() -> str:
-    return datetime.now().isoformat(timespec="seconds")
+    """UTC with an explicit offset, so the time means the same wherever the app runs."""
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 def _enc(k, v):

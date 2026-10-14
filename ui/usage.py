@@ -1,6 +1,8 @@
 import pandas as pd
 import streamlit as st
 
+from ui.common import fmt_time, to_ist
+
 
 def _table(df: pd.DataFrame, by: str) -> pd.DataFrame:
     g = df.groupby(by, dropna=False).agg(
@@ -21,7 +23,8 @@ def render(store) -> None:
         return
     df = pd.DataFrame(rows)
     df["cost_usd"] = df["cost_usd"].fillna(0)
-    df["date"] = df["ts"].str[:10]
+    df["date"] = df["ts"].map(lambda t: (to_ist(t).strftime("%Y-%m-%d") if to_ist(t) else str(t)[:10]))
+    df["ts"] = df["ts"].map(fmt_time)
     df["company"] = df["company"].fillna("(failed run)")
 
     m = st.columns(4)

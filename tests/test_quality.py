@@ -185,3 +185,13 @@ def test_history_retention_and_clear(tmp_path):
     assert [a["company"] for a in store.list_applications()] == ["New"] and store.get_versions(ids[0]) == []
     assert store.clear_history() == 1 and store.list_applications() == []
     assert len(store.usage_rows()) == 1  # spend history is kept
+
+
+def test_saved_times_are_utc_and_shown_in_indian_time():
+    from storage.sqlite_store import now
+    from ui.common import fmt_time
+
+    assert now().endswith("+00:00")  # stored as UTC with its offset
+    assert fmt_time("2026-10-14T10:43:59+00:00") == "14 Oct 2026, 04:13 PM IST"
+    assert fmt_time("2026-10-14T23:30:00+00:00") == "15 Oct 2026, 05:00 AM IST"  # crosses midnight
+    assert fmt_time("not a time") == "not a time"

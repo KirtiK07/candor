@@ -6,14 +6,14 @@ The full results view (diff, fact check, retry) opens on demand.
 import io
 import mimetypes
 import zipfile
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import streamlit as st
 
 from core.config import setting
 from core.renderer import cover_letter_to_pdf, resume_to_markdown, resume_to_text, to_docx, to_pdf
 from core.tailor import change_report
-from ui.common import safe_filename
+from ui.common import fmt_time, safe_filename, to_ist
 from ui.results import render_results
 
 PAGE = 10
@@ -32,16 +32,10 @@ def purge_old(_store, days: int) -> int:
     """Delete applications older than `days`. Runs at most once an hour; returns how many were removed."""
     if days <= 0:
         return 0
-    return _store.delete_older_than((datetime.now() - timedelta(days=days)).isoformat(timespec="seconds"))
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    return _store.delete_older_than(cutoff.isoformat(timespec="seconds"))
 BOX_HEIGHT = 300
 DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-
-
-def _when(ts: str) -> str:
-    try:
-        return datetime.fromisoformat(ts).strftime("%d %b %Y, %H:%M")
-    except (TypeError, ValueError):
-        return str(ts or "")[:16]
 
 
 def _build_zip(store, apps: list[dict]) -> bytes:
@@ -57,7 +51,9 @@ def _build_zip(store, apps: list[dict]) -> bytes:
             inputs = app.get("inputs") or {}
             photo = app.get("photo") if inputs.get("include_photo") else None
             a4, n = inputs.get("region", "US") != "US", v["version_no"]
-            folder = safe_filename(app["created_at"][:10], app["company"], app["job_title"])
+            day = to_ist(app["created_at"])
+            folder = safe_filename(day.strftime("%Y-%m-%d") if day else app["created_at"][:10], app["company"],
+                                   app["job_title"])
             if app.get("resume_file"):
                 z.writestr(f"{folder}/original_{safe_filename(app.get('resume_filename') or 'resume')}",
                            app["resume_file"])
@@ -95,7 +91,7 @@ def _card(store, summary: dict) -> None:
         else:
             n = default
         v = by_no[n]
-        head.caption(f"{_when(app['created_at'])}  ·  ATS match {v['ats_before']}% → **{v['ats_after']}%**"
+        head.caption(f"{fmt_time(app['created_at'])}  ·  ATS match {v['ats_before']}% → **{v['ats_after']}%**"
                      + (f"  ·  {len(versions)} versions" if len(versions) > 1 else ""))
 
         base = safe_filename(v["resume_json"].get("name", ""), app["company"], app["job_title"], f"v{n}")

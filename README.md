@@ -2,6 +2,9 @@
 
 **Tailored resumes. Every word true.**
 
+[![Open the app](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://candor-fyobbhgqtb3m7ntsdhwdte.streamlit.app/)
+
+**Live app:** https://candor-fyobbhgqtb3m7ntsdhwdte.streamlit.app/ (sign-in required)
 
 Tailor your resume to any job description so it's ATS-friendly, **without inventing anything**.
 Paste a JD, upload your resume, and get a tailored DOCX/PDF plus an optional cover letter, an ATS match score,

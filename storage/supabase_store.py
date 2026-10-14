@@ -8,9 +8,14 @@ import base64
 from storage.sqlite_store import VERSION_COLS, now
 
 
+FILE_COLUMNS_SQL = ("alter table applications add column if not exists resume_file text, "
+                    "add column if not exists resume_filename text;")
+
+
 def _photo_out(row: dict) -> dict:
-    if row.get("photo"):
-        row["photo"] = base64.b64decode(row["photo"])
+    for k in ("photo", "resume_file"):  # binary columns are stored as base64 text
+        if row.get(k):
+            row[k] = base64.b64decode(row[k])
     return row
 
 
@@ -23,12 +28,20 @@ class SupabaseStore:
         # The dashboard shows the REST endpoint (".../rest/v1/"); the client wants the bare project URL.
         url = str(url or "").strip().rstrip("/").removesuffix("/rest/v1")
         self.db = create_client(url, str(key or "").strip())
+        # Projects set up before uploaded files were stored lack these columns until FILE_COLUMNS_SQL is run.
+        try:
+            self.db.table("applications").select("resume_filename").limit(1).execute()
+            self.file_columns_missing = False
+        except Exception:
+            self.file_columns_missing = True
 
     def create_application(self, *, company, job_title, jd_text, inputs, original_resume_text,
-                           resume_json, jd_analysis, photo=None) -> int:
+                           resume_json, jd_analysis, photo=None, resume_file=None, resume_filename=None) -> int:
         row = dict(created_at=now(), company=company, job_title=job_title, jd_text=jd_text, inputs=inputs,
                    original_resume_text=original_resume_text, resume_json=resume_json, jd_analysis=jd_analysis,
                    photo=base64.b64encode(photo).decode() if photo else None)
+        if resume_file and not self.file_columns_missing:
+            row.update(resume_file=base64.b64encode(resume_file).decode(), resume_filename=resume_filename)
         return self.db.table("applications").insert(row).execute().data[0]["id"]
 
     def add_version(self, app_id: int, data: dict) -> int:

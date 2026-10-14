@@ -3,7 +3,8 @@ create table if not exists applications (
     id bigint generated always as identity primary key,
     created_at text, company text, job_title text, jd_text text,
     inputs jsonb, original_resume_text text, resume_json jsonb, jd_analysis jsonb,
-    photo text  -- base64
+    photo text,  -- base64
+    resume_file text, resume_filename text  -- the uploaded resume, base64
 );
 
 create table if not exists versions (
@@ -26,3 +27,6 @@ create table if not exists usage_log (
 alter table applications enable row level security;
 alter table versions enable row level security;
 alter table usage_log enable row level security;
+
+-- Upgrading a project created before uploaded resume files were stored? Run just this line:
+-- alter table applications add column if not exists resume_file text, add column if not exists resume_filename text;

@@ -23,6 +23,12 @@ def render(store) -> None:
 
     st.subheader("🗄️ Storage")
     st.write(f"History is stored in **{store.name}**.")
+    if getattr(store, "file_columns_missing", False):
+        from storage.supabase_store import FILE_COLUMNS_SQL
+
+        st.warning("Uploaded resume files aren't being saved yet: your Supabase tables need two new columns. "
+                   "Run this once in Supabase → SQL Editor, then reboot the app:")
+        st.code(FILE_COLUMNS_SQL, language="sql")
     if store.name.startswith("SQLite"):
         st.caption("On Streamlit Community Cloud the local disk is wiped when the app restarts. "
                    "Configure Supabase (see README) to keep history there.")

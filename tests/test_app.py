@@ -2,6 +2,7 @@
 import copy
 
 import pytest
+import streamlit as st
 from streamlit.testing.v1 import AppTest
 
 import core.llm_client
@@ -59,6 +60,8 @@ def make_app(tmp_path, monkeypatch):
     monkeypatch.setattr(ui.sidebar, "LLM", FakeLLM)
     ui.sidebar._check.clear()
     ui.sidebar._probe.clear()
+    st.cache_resource.clear()  # the app caches its store; each test has its own database
+    st.cache_data.clear()
 
     def make(key, groq_key=None, login=None):
         for var in ("APP_USERNAME", "APP_PASSWORD"):
@@ -222,3 +225,19 @@ def test_history_cards_show_original_jd_and_tailored_with_downloads(make_app):
     next(b for b in at.button if b.key == "hist_clear").click().run()
     assert not at.exception, at.exception
     assert any("No tailored resumes yet" in i.value for i in at.info)
+
+
+def test_history_returns_the_uploaded_file_itself(make_app, tmp_path):
+    from storage.sqlite_store import SQLiteStore
+
+    original = to_docx(RESUME_JSON)
+    store = SQLiteStore(tmp_path / "app.db")  # the same database the app under test uses
+    aid = store.create_application(company="FinNova", job_title="Backend Engineer", jd_text=JD_TEXT, inputs={},
+                                   original_resume_text=RESUME_TEXT, resume_json=RESUME_JSON,
+                                   jd_analysis=JD_ANALYSIS, resume_file=original, resume_filename="Priya CV.docx")
+    store.add_version(aid, {"resume_json": RESUME_JSON, "ats_before": 40, "ats_after": 60, "model": "m"})
+    assert store.get_application(aid)["resume_file"] == original
+
+    at = make_app("sk-test")
+    assert not at.exception, at.exception
+    assert "⬇️ Priya CV.docx" in [b.label for b in at.get("download_button")]

@@ -8,7 +8,8 @@ SCHEMA = """
 CREATE TABLE IF NOT EXISTS applications (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     created_at TEXT, company TEXT, job_title TEXT, jd_text TEXT,
-    inputs TEXT, original_resume_text TEXT, resume_json TEXT, jd_analysis TEXT, photo BLOB
+    inputs TEXT, original_resume_text TEXT, resume_json TEXT, jd_analysis TEXT, photo BLOB,
+    resume_file BLOB, resume_filename TEXT
 );
 CREATE TABLE IF NOT EXISTS versions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,6 +56,11 @@ class SQLiteStore:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self._conn() as c:
             c.executescript(SCHEMA)
+            # databases created before the uploaded-file columns existed
+            have = {r[1] for r in c.execute("PRAGMA table_info(applications)")}
+            for col, kind in (("resume_file", "BLOB"), ("resume_filename", "TEXT")):
+                if col not in have:
+                    c.execute(f"ALTER TABLE applications ADD COLUMN {col} {kind}")
 
     @contextmanager
     def _conn(self):
@@ -68,10 +74,10 @@ class SQLiteStore:
             conn.close()
 
     def create_application(self, *, company, job_title, jd_text, inputs, original_resume_text,
-                           resume_json, jd_analysis, photo=None) -> int:
+                           resume_json, jd_analysis, photo=None, resume_file=None, resume_filename=None) -> int:
         row = dict(created_at=now(), company=company, job_title=job_title, jd_text=jd_text, inputs=inputs,
                    original_resume_text=original_resume_text, resume_json=resume_json,
-                   jd_analysis=jd_analysis, photo=photo)
+                   jd_analysis=jd_analysis, photo=photo, resume_file=resume_file, resume_filename=resume_filename)
         cols = ", ".join(row)
         with self._conn() as c:
             cur = c.execute(f"INSERT INTO applications ({cols}) VALUES ({', '.join('?' * len(row))})",

@@ -4,6 +4,7 @@ Files are built only when a download button is clicked, so the page stays fast h
 The full results view (diff, fact check, retry) opens on demand.
 """
 import io
+import mimetypes
 import zipfile
 from datetime import datetime, timedelta
 
@@ -57,6 +58,9 @@ def _build_zip(store, apps: list[dict]) -> bytes:
             photo = app.get("photo") if inputs.get("include_photo") else None
             a4, n = inputs.get("region", "US") != "US", v["version_no"]
             folder = safe_filename(app["created_at"][:10], app["company"], app["job_title"])
+            if app.get("resume_file"):
+                z.writestr(f"{folder}/original_{safe_filename(app.get('resume_filename') or 'resume')}",
+                           app["resume_file"])
             z.writestr(f"{folder}/original_resume.txt", app.get("original_resume_text") or "")
             z.writestr(f"{folder}/job_description.txt", app["jd_text"] or "")
             z.writestr(f"{folder}/tailored_resume_v{n}.pdf",
@@ -100,8 +104,14 @@ def _card(store, summary: dict) -> None:
             st.markdown("**📄 Original resume**")
             with st.container(height=BOX_HEIGHT):
                 st.text(app.get("original_resume_text") or "")
-            st.download_button("⬇️ Original (.txt)", app.get("original_resume_text") or "", f"{base}_original.txt",
-                               key=f"h_orig_{aid}", width="stretch")
+            if app.get("resume_file"):  # exactly the file that was uploaded
+                fname = app.get("resume_filename") or "resume"
+                st.download_button(f"⬇️ {fname}", app["resume_file"], fname,
+                                   mimetypes.guess_type(fname)[0] or "application/octet-stream",
+                                   key=f"h_orig_{aid}", width="stretch")
+            else:  # pasted text, or saved before uploaded files were kept
+                st.download_button("⬇️ Original (.txt)", app.get("original_resume_text") or "",
+                                   f"{base}_original.txt", key=f"h_orig_{aid}", width="stretch")
         with jd:
             st.markdown("**📋 Job description**")
             with st.container(height=BOX_HEIGHT):

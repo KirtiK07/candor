@@ -17,8 +17,12 @@ def _upload_into(label: str, uploader_key: str, text_key: str) -> None:
     """File uploader that fills the editable text area `text_key` whenever a new file is chosen."""
     ss = st.session_state
     up = st.file_uploader(label, type=FILE_TYPES, key=uploader_key)
+    if up is None:  # file removed: forget it, so a pasted resume isn't saved with an old file
+        ss.pop(f"{uploader_key}_bytes", None)
+        ss.pop(f"{uploader_key}_name", None)
     if up is not None and ss.get(f"{uploader_key}_id") != up.file_id:
         ss[f"{uploader_key}_id"] = up.file_id
+        ss[f"{uploader_key}_bytes"], ss[f"{uploader_key}_name"] = up.getvalue(), up.name
         try:
             ss[text_key] = extract_text(up.name, up.getvalue())
             ss[f"{uploader_key}_err"] = None
@@ -99,7 +103,8 @@ def _run(store, resume_text, jd, company, title, settings: Settings, photo) -> N
                                        settings=settings, progress=status.write)
             app_id = store.create_application(
                 company=company, job_title=title, jd_text=jd, inputs=settings.to_dict(),
-                original_resume_text=resume_text, resume_json=resume_json, jd_analysis=analysis, photo=photo)
+                original_resume_text=resume_text, resume_json=resume_json, jd_analysis=analysis, photo=photo,
+                resume_file=ss.get("in_resume_file_bytes"), resume_filename=ss.get("in_resume_file_name"))
             vid = store.add_version(app_id, {**version, **usage_totals(llm.usage), "model": llm.model})
             status.update(label="Done!", state="complete", expanded=False)
     except LLMError as e:

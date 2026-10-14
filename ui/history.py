@@ -39,7 +39,7 @@ def render(store) -> None:
     st.header("Application history")
     apps = store.list_applications()
     if not apps:
-        st.info("No redrafts yet. Your tailored resumes will appear here.")
+        st.info("No tailored resumes yet. They will appear here.")
         return
 
     q = st.text_input("🔎 Search by company or role", key="hist_q").strip().lower()
@@ -57,7 +57,7 @@ def render(store) -> None:
             with st.spinner("Building ZIP…"):
                 ss.hist_zip = _build_zip(store, apps)
         if ss.get("hist_zip"):
-            st.download_button("⬇️ Download ZIP", ss.hist_zip, "resume_redrafter_history.zip",
+            st.download_button("⬇️ Download ZIP", ss.hist_zip, "candor_history.zip",
                                "application/zip", width="stretch")
     if not shown:
         st.warning("No applications match your search.")

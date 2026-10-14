@@ -1,4 +1,7 @@
-# 📄 Resume Redrafter
+# 📄 Candor
+
+**Tailored resumes. Every word true.**
+
 
 Tailor your resume to any job description so it's ATS-friendly, **without inventing anything**.
 Paste a JD, upload your resume, and get a tailored DOCX/PDF plus an optional cover letter, an ATS match score,

@@ -25,8 +25,8 @@ button[kind="primary"]:hover,[data-testid="stBaseButton-primary"]:hover{filter:b
 h3{color:#3730A3}
 </style>"""
 
-BANNER = """<div class="rr-banner"><h1>📄 Resume Redrafter</h1>
-<p>Tailor your resume to any job description: ATS-friendly, honest, with an optional cover letter.</p></div>"""
+BANNER = """<div class="rr-banner"><h1>📄 Candor</h1>
+<p>Tailored resumes. Every word true. ATS-friendly tailoring for any job description, with an optional cover letter.</p></div>"""
 
 
 def apply() -> None:

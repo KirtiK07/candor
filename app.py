@@ -2,7 +2,7 @@ import hmac
 
 import streamlit as st
 
-st.set_page_config(page_title="Resume Redrafter", page_icon="📄", layout="wide")
+st.set_page_config(page_title="Candor · Honest resume tailoring", page_icon="📄", layout="wide")
 
 from core.config import setting  # noqa: E402
 from storage.db import make_store  # noqa: E402
@@ -21,7 +21,7 @@ def password_gate() -> bool:
     pw = setting("APP_PASSWORD")
     if not pw or st.session_state.get("authed"):
         return True
-    st.title("📄 Resume Redrafter")
+    st.title("📄 Candor")
     entered = st.text_input("Password", type="password")
     if st.button("Enter"):
         if hmac.compare_digest(entered.encode(), str(pw).encode()):
@@ -37,7 +37,7 @@ if not password_gate():
 store = get_store()
 style.banner()
 sidebar.render(store)
-t_redraft, t_history, t_usage, t_settings = st.tabs(["✍️ Redraft", "🗂️ History", "📊 Usage", "⚙️ Settings"])
+t_redraft, t_history, t_usage, t_settings = st.tabs(["✍️ Tailor", "🗂️ History", "📊 Usage", "⚙️ Settings"])
 with t_redraft:
     redraft.render(store)
 with t_history:

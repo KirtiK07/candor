@@ -252,7 +252,7 @@ def _render_gaps(app: dict, v: dict) -> None:
 
 def _render_retry(store, app: dict, v: dict, serious: list[dict], key: str) -> None:
     ss = st.session_state
-    with st.expander("🔁 Not satisfied? Retry this redraft", expanded=False):
+    with st.expander("🔁 Not satisfied? Retry this version", expanded=False):
         if not ss.get("models"):
             st.info("Retry needs a working API key in `.env` (see the sidebar).")
             return

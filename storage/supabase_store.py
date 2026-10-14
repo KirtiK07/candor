@@ -20,7 +20,9 @@ class SupabaseStore:
     def __init__(self, url: str, key: str):
         from supabase import create_client
 
-        self.db = create_client(url, key)
+        # The dashboard shows the REST endpoint (".../rest/v1/"); the client wants the bare project URL.
+        url = str(url or "").strip().rstrip("/").removesuffix("/rest/v1")
+        self.db = create_client(url, str(key or "").strip())
 
     def create_application(self, *, company, job_title, jd_text, inputs, original_resume_text,
                            resume_json, jd_analysis, photo=None) -> int:

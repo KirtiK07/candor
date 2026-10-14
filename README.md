@@ -35,7 +35,7 @@ python -m venv .venv
 pip install -r requirements.txt
 streamlit run app.py
 ```
-Put your API keys in a `.env` file in the project folder (copy `.env.example`). Gemini, Groq and OpenAI are supported.
+Put your API keys in a `.env` file in the project folder. Gemini, Groq and OpenAI are supported.
 Any one key is enough:
 ```
 GEMINI_API_KEY=...
@@ -58,7 +58,7 @@ Tests: `python -m pytest -q tests`
 2. **Persistent history:** Streamlit Cloud's disk is wiped on restart, so use Supabase:
    create a free project at supabase.com → SQL editor → run `storage/supabase_schema.sql`.
 3. share.streamlit.io → **New app** → pick the repo, main file `app.py`.
-4. **App settings → Secrets**, paste (see `.streamlit/secrets.toml.example`):
+4. **App settings → Secrets**, paste:
    ```toml
    OPENAI_API_KEY = "sk-..."            # replaces .env on the cloud
    APP_USERNAME = "your-id"             # login page: only this ID + password can use the app

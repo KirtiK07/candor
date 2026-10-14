@@ -91,6 +91,10 @@ def render_results(store, app_id: int, key: str) -> None:
     if pages > limit:
         st.warning(f"The PDF runs to {pages} pages but you asked for {limit}. "
                    f"Retry with feedback like “condense to {limit} page” or a stronger intensity.")
+    if inputs.get("cover_letter") and not v.get("cover_letter"):
+        why = next((i.get("detail") for i in (v.get("verification") or {}).get("rule_issues") or []
+                    if i.get("id") == "COVER_LETTER"), "")
+        st.warning(f"✉️ No cover letter in this version. {why or 'Use Retry below with the cover letter box ticked.'}")
     changes = v.get("change_log") or []
     stats = (v.get("ats_detail") or {}).get("stats")
     report = change_report(changes, stats)

@@ -6,6 +6,7 @@ from dataclasses import asdict, dataclass, fields
 from core import prompts
 from core.ats_scorer import score as ats_score
 from core.ats_scorer import term_in, tokens
+from core.llm_client import LLMError
 from core.renderer import bullet_lines, pdf_pages, resume_to_text
 from core.tailor import (BULLET_KEY, WORDS_PER_PAGE, _norm, apply_plan, itemize, keyword_targets, min_rewrites,
                          plan_stats)
@@ -347,18 +348,26 @@ def generate_version(llm, *, original_text: str, resume_json: dict, jd_analysis:
     if settings.cover_letter:
         progress("✉️ Writing the cover letter…")
         profile = jd_analysis.get("candidate_profile") or {}
-        cl = llm.json_call(
-            "cover_letter", prompts.COVER_SYSTEM,
-            f"## ROLE\n{job_title} at {company}\n\n## TONE\n{settings.cover_tone}\n\n"
-            f"## HIRING MANAGER\n{settings.hiring_manager or 'unknown'}\n\n"
-            f"## JD ANALYSIS\n{_dump({k: jd_analysis.get(k) for k in ('must_have_skills', 'responsibilities', 'keywords', 'jd_special_requirements')})}"
-            f"\n\n## CANDIDATE PROFILE\n{_dump(profile)}"
-            f"\n\n## ORIGINAL RESUME (the ONLY source of facts)\n{original_text}"
-            f"\n\n## TAILORED RESUME (use for wording and emphasis only)\n{new_text}"
-            f"\n\n## EXTRA FACTS\n{settings.extra_facts or 'none'}"
-            f"\n\n## SPECIAL INSTRUCTIONS\n{settings.special_instructions or 'none'}\n\n{_forbidden_block(jd_analysis)}",
-        )
-        cover = (cl.get("cover_letter") or "").strip() or None
+        cl, cover_error = {}, ""
+        try:
+            cl = llm.json_call(
+                "cover_letter", prompts.COVER_SYSTEM,
+                f"## ROLE\n{job_title} at {company}\n\n## TONE\n{settings.cover_tone}\n\n"
+                f"## HIRING MANAGER\n{settings.hiring_manager or 'unknown'}\n\n"
+                f"## JD ANALYSIS\n{_dump({k: jd_analysis.get(k) for k in ('must_have_skills', 'responsibilities', 'keywords', 'jd_special_requirements')})}"
+                f"\n\n## CANDIDATE PROFILE\n{_dump(profile)}"
+                f"\n\n## ORIGINAL RESUME (the ONLY source of facts)\n{original_text}"
+                f"\n\n## TAILORED RESUME (use for wording and emphasis only)\n{new_text}"
+                f"\n\n## EXTRA FACTS\n{settings.extra_facts or 'none'}"
+                f"\n\n## SPECIAL INSTRUCTIONS\n{settings.special_instructions or 'none'}\n\n{_forbidden_block(jd_analysis)}",
+            )
+        except LLMError as e:  # the resume is already done; don't lose it because the last step failed
+            cover_error = str(e)
+        cover = _letter_text(cl)
+        if not cover:
+            rule_issues.append({"source": "rule", "severity": "medium", "id": "COVER_LETTER", "detail":
+                                "Cover letter couldn't be generated" + (f": {cover_error}" if cover_error else
+                                " (the model returned no letter)") + ". Use Retry with the cover letter box ticked."})
         if cover:  # the sign-off belongs on its own lines
             cover = re.sub(r"(?<=[.!])\s+(Sincerely|Best regards|Kind regards|Regards),\s*", r"\n\n\1,\n", cover)
         if cover and not cover.lower().startswith("dear"):
@@ -381,6 +390,22 @@ def generate_version(llm, *, original_text: str, resume_json: dict, jd_analysis:
         "intensity": settings.intensity,
         "feedback": feedback or "",
     }
+
+
+def _letter_text(response) -> str | None:
+    """The letter from the model's JSON, whatever key or nesting it used ({"cover_letter": ...}, {"letter": ...},
+    {"cover_letter": {"text": ...}}, a list of paragraphs...)."""
+    if isinstance(response, str):
+        return response.strip() or None
+    if isinstance(response, list):
+        return "\n\n".join(p.strip() for p in response if isinstance(p, str) and p.strip()) or None
+    if isinstance(response, dict):
+        for key in ("cover_letter", "letter", "text", "content", "body"):
+            if key in response and (found := _letter_text(response[key])):
+                return found
+        longest = max((v for v in response.values() if isinstance(v, str)), key=len, default="")
+        return longest.strip() if len(longest) > 200 else None
+    return None
 
 
 def _note_text(n) -> str:

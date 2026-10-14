@@ -137,3 +137,34 @@ def test_summary_filler_is_swapped_and_repaired():
     assert llm.steps == ["rewrite", "verify", "repair"]
     assert any("robust" in i["claim"] for i in v["verification"]["auto_fixed"])
     assert not [i for i in v["verification"]["rule_issues"] if "filler" in i["detail"]]
+
+
+def test_cover_letter_is_found_in_any_response_shape():
+    from core.pipeline import _letter_text
+
+    letter = "Dear Hiring Manager,\n\n" + "I built things. " * 20
+    assert _letter_text({"cover_letter": letter}) == letter.strip()
+    assert _letter_text({"letter": letter}) == letter.strip()
+    assert _letter_text({"cover_letter": {"text": letter}}) == letter.strip()
+    assert _letter_text({"cover_letter": ["Para one.", "Para two."]}) == "Para one.\n\nPara two."
+    assert _letter_text({"anything": letter}) == letter.strip()
+    assert _letter_text({}) is None
+
+
+class CoverFailsLLM(RepairLLM):
+    def json_call(self, step, system, user):
+        if step == "cover_letter":
+            from core.llm_client import LLMError
+            raise LLMError("Your Gemini daily quota is used up.", "quota")
+        if step == "rewrite":
+            return {"items": []}
+        return {"issues": []}
+
+
+def test_cover_letter_failure_keeps_the_resume_and_explains():
+    v = generate_version(CoverFailsLLM(), original_text=RESUME_TEXT, resume_json=RESUME_JSON,
+                         jd_analysis=JD_ANALYSIS, company="FinNova", job_title="Backend Engineer",
+                         settings=Settings(cover_letter=True))
+    assert v["cover_letter"] is None and v["resume_json"]["name"] == "Priya Sharma"
+    issue = next(i for i in v["verification"]["rule_issues"] if i.get("id") == "COVER_LETTER")
+    assert "daily quota" in issue["detail"]

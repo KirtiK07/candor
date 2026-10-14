@@ -5,7 +5,7 @@ from core.parser import ParseError, extract_text
 from core.pipeline import Settings, analyze_jd, extract_resume, generate_version, usage_totals
 from core.tokens import count_tokens, estimate_run
 from core.pipeline import MAX_JD_TOKENS
-from ui import style
+from ui import style, tour
 from ui.common import INTENSITIES, INTENSITY_HELP, record_usage
 from ui.results import render_results
 from ui.sidebar import make_llm
@@ -139,8 +139,11 @@ def _run(store, resume_text, jd, company, title, settings: Settings, photo) -> N
 
 def render(store) -> None:
     ss = st.session_state
-    style.guide(expanded=not ss.get("current_app_id") and not ss.get("guide_seen"))
-    ss.guide_seen = True
+    guide_col, tour_col = st.columns([5, 1], vertical_alignment="center")
+    with guide_col:
+        style.guide(expanded=False)
+    with tour_col:
+        tour.render()
 
     left, right = st.columns(2, gap="medium")
     with left, st.container(border=True):

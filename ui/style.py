@@ -37,10 +37,11 @@ h3{color:#C4B5FD}
 h4{color:#E9D5FF}
 
 /* main tabs: pill style with a gradient underline */
-button[data-baseweb="tab"]{border-radius:.6rem .6rem 0 0;transition:background .15s ease,color .15s ease}
-button[data-baseweb="tab"]:hover{background:rgba(139,92,246,.12);color:#DDD6FE}
-button[data-baseweb="tab"][aria-selected="true"]{color:#F5F3FF}
-[data-baseweb="tab-highlight"]{background:var(--rr-grad)!important;height:3px}
+[data-testid="stTab"]{border-radius:.6rem .6rem 0 0;padding:0 .5rem;transition:background .15s ease,color .15s ease}
+[data-testid="stTab"]:hover{background:rgba(139,92,246,.12);color:#DDD6FE}
+[data-testid="stTab"][aria-selected="true"]{color:#F5F3FF;box-shadow:inset 0 -3px 0 #8B5CF6}
+/* the tour's script frame is invisible */
+.st-key-tour_btn + div iframe,iframe[height="1"]{display:block;height:0!important;border:0}
 
 /* buttons */
 button[kind="primary"],[data-testid="stBaseButton-primary"]{background:var(--rr-grad)!important;background-size:200% 200%!important;
@@ -169,7 +170,7 @@ def banner() -> None:
 
 
 def guide(expanded: bool) -> None:
-    """'How Candor works': open for first-time visitors, tucked away once there's history."""
+    """'How Candor works' overview cards; the step-by-step popups live in ui/tour.py."""
     with st.expander("👋 New here? How Candor works", expanded=expanded):
         st.markdown(GUIDE, unsafe_allow_html=True)
 

@@ -56,6 +56,7 @@ Tests: `python -m pytest -q tests`
 4. **App settings → Secrets**, paste (see `.streamlit/secrets.toml.example`):
    ```toml
    OPENAI_API_KEY = "sk-..."            # replaces .env on the cloud
+   APP_USERNAME = "your-id"             # login page: only this ID + password can use the app
    APP_PASSWORD = "something-long"      # REQUIRED in practice: otherwise anyone with the URL spends your credit
    STORAGE = "supabase"
    SUPABASE_URL = "https://xxxx.supabase.co"
@@ -64,7 +65,7 @@ Tests: `python -m pytest -q tests`
 
 ## Project layout
 ```
-app.py                 Streamlit entry (password gate, sidebar, tabs)
+app.py                 Streamlit entry (login page, sidebar, tabs)
 core/                  parser, prompts, llm_client, pipeline, verifier, ats_scorer, renderer, diffing, tokens
 storage/               SQLite + Supabase stores with the same interface
 ui/                    sidebar, redraft, results (shared view + retry), history, usage, settings

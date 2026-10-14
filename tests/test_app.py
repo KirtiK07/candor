@@ -60,7 +60,12 @@ def make_app(tmp_path, monkeypatch):
     ui.sidebar._check.clear()
     ui.sidebar._probe.clear()
 
-    def make(key, groq_key=None):
+    def make(key, groq_key=None, login=None):
+        for var in ("APP_USERNAME", "APP_PASSWORD"):
+            monkeypatch.delenv(var, raising=False)
+        if login:
+            monkeypatch.setenv("APP_USERNAME", login[0])
+            monkeypatch.setenv("APP_PASSWORD", login[1])
         monkeypatch.delenv("GROQ_API_KEY", raising=False)
         monkeypatch.delenv("GEMINI_API_KEY", raising=False)
         monkeypatch.setenv("DEFAULT_PROVIDER", "openai")
@@ -183,3 +188,19 @@ def test_starts_on_working_provider_when_default_has_no_credit(make_app):
     at = make_app("nocredit", groq_key="gsk-test")                   # DEFAULT_PROVIDER=openai in fixture
     assert at.sidebar.radio(key="provider").value == "groq"
     assert at.sidebar.selectbox(key="model").value == "openai/gpt-oss-120b"
+
+
+def test_login_page_blocks_until_correct_id_and_password(make_app, monkeypatch):
+    monkeypatch.setattr("time.sleep", lambda s: None)
+    at = make_app("sk-ok", login=("kirti", "s3cret-pass"))
+    assert not at.tabs and at.text_input  # only the sign-in form is shown
+    at.text_input[0].input("kirti")
+    at.text_input[1].input("wrong")
+    at.button[0].click().run()
+    assert any("Wrong ID or password" in e.value for e in at.error) and not at.tabs
+    at.text_input[1].input("s3cret-pass")
+    at.button[0].click().run()
+    assert at.tabs and not at.exception
+    sign_out = next(b for b in at.sidebar.button if "Sign out" in b.label)
+    sign_out.click().run()
+    assert not at.tabs
